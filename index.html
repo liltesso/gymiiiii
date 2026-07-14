@@ -1,1 +1,886 @@
+<!DOCTYPE html>
+<html lang="uk">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Aesthetix</title>
+    <style>
+        :root {
+            --font: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", "Helvetica Neue", system-ui, sans-serif;
+            --bg: #000000;
+            --bg2: #1c1c1e;
+            --bg3: #2c2c2e;
+            --bg4: #3a3a3c;
+            --sep: rgba(84,84,88,.35);
+            --lbl: #ffffff;
+            --lbl2: #ebebf5;
+            --lbl3: rgba(235,235,245,.6);
+            --lbl4: rgba(235,235,245,.3);
+            --blue: #0a84ff;
+            --green: #30d158;
+            --red: #ff453a;
+            --orange: #ff9f0a;
+            --teal: #64d2ff;
+            --purple: #bf5af2;
+            --r: 14px;
+            --r2: 12px;
+            --r3: 10px;
+            --nh: 82px;
+        }
 
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+        html { height: 100%; }
+
+        body {
+            font-family: var(--font);
+            background: var(--bg);
+            color: var(--lbl);
+            min-height: 100%;
+            padding-bottom: calc(var(--nh) + 8px);
+            overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            font-size: 17px;
+            line-height: 1.4;
+            letter-spacing: -0.01em;
+        }
+
+        /* ══════ LOGIN & FORMS ══════ */
+        .login {
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            min-height: 100vh; padding: 32px 24px; text-align: center;
+        }
+        .login-icon { font-size: 64px; margin-bottom: 16px; }
+        .login-title { font-size: 32px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 6px; }
+        .login-sub { font-size: 15px; color: var(--lbl3); margin-bottom: 32px; max-width: 300px; }
+        .login-form { width: 100%; max-width: 300px; display: flex; flex-direction: column; gap: 12px; }
+        .login-form input {
+            width: 100%; padding: 16px 20px;
+            border-radius: var(--r); border: none;
+            background: var(--bg2); color: var(--lbl);
+            font-family: var(--font); font-size: 17px; font-weight: 600;
+            text-align: center;
+        }
+        .login-form input::placeholder { color: var(--lbl4); font-weight: 400; }
+        .login-form input:focus { outline: none; box-shadow: 0 0 0 2px var(--blue); }
+        .auth-toggle { font-size: 14px; color: var(--blue); cursor: pointer; margin-top: 16px; font-weight: 500; }
+
+        /* ══════ BUTTON SYSTEM ══════ */
+        .btn {
+            display: flex; justify-content: center; align-items: center; gap: 6px;
+            width: 100%; padding: 16px; border: none; border-radius: var(--r);
+            font-family: var(--font); font-size: 17px; font-weight: 600;
+            cursor: pointer; transition: opacity .15s; -webkit-user-select: none;
+            letter-spacing: -0.01em;
+        }
+        .btn:disabled { opacity: .4; cursor: not-allowed; }
+        .btn:active:not(:disabled) { opacity: .7; }
+        .btn-blue { background: var(--blue); color: #fff; }
+        .btn-green { background: var(--green); color: #000; }
+        .btn-gray { background: var(--bg3); color: var(--lbl); }
+        .btn-red { background: var(--red); color: #fff; }
+        .btn-sm { padding: 10px 16px; font-size: 15px; font-weight: 600; border-radius: var(--r3); width: auto; }
+
+        /* ══════ HEADER ══════ */
+        .hdr {
+            position: sticky; top: 0; z-index: 200;
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px 10px;
+            background: rgba(0,0,0,.85);
+            backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-bottom: .5px solid var(--sep);
+        }
+        .hdr-title { font-size: 17px; font-weight: 600; letter-spacing: -0.02em; }
+        .hdr-right { display: flex; align-items: center; gap: 8px; }
+        .sync-dot { width: 7px; height: 7px; border-radius: 50%; }
+        .sync-dot.ok { background: var(--green); }
+        .sync-dot.saving { background: var(--orange); animation: blink .6s infinite alternate; }
+        .sync-dot.err { background: var(--red); }
+        @keyframes blink { from{opacity:.3} to{opacity:1} }
+        
+        .pill {
+            font-size: 12px; font-weight: 600; padding: 3px 8px;
+            border-radius: 6px; letter-spacing: -0.01em;
+        }
+        .pill-on { background: rgba(48,209,88,.15); color: var(--green); }
+        .pill-off { background: var(--bg2); color: var(--lbl4); }
+
+        /* ══════ ALERT TOAST ══════ */
+        #toast {
+            position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+            z-index: 10000; background: rgba(28,28,30,.96); border: .5px solid var(--sep);
+            padding: 12px 24px; border-radius: 20px; font-size: 14px; font-weight: 600;
+            box-shadow: 0 8px 24px rgba(0,0,0,.5); backdrop-filter: blur(10px);
+            transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            text-align: center; width: calc(100% - 32px); max-width: 320px;
+        }
+        #toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ══════ VIEWS ══════ */
+        .view { display: none; padding: 16px; max-width: 480px; margin: 0 auto; }
+        .view.on { display: block; animation: vIn .2s ease-out; }
+        @keyframes vIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+
+        /* ══════ BOTTOM TAB BAR ══════ */
+        .tab-bar {
+            position: fixed; bottom: 0; left: 0; right: 0;
+            height: var(--nh);
+            background: rgba(28,28,30,.92);
+            backdrop-filter: saturate(180%) blur(20px); -webkit-backdrop-filter: saturate(180%) blur(20px);
+            border-top: .5px solid var(--sep);
+            display: flex; justify-content: space-around; align-items: flex-start;
+            padding-top: 6px; padding-bottom: env(safe-area-inset-bottom);
+            z-index: 1000;
+        }
+        .tab-item {
+            display: flex; flex-direction: column; align-items: center; gap: 2px;
+            background: none; border: none; color: var(--lbl4);
+            font-family: var(--font); font-size: 10px; font-weight: 500;
+            cursor: pointer; width: 33%; letter-spacing: 0;
+        }
+        .tab-item.on { color: var(--blue); }
+        .tab-item svg { width: 24px; height: 24px; fill: currentColor; }
+
+        /* ══════ GROUPED LIST ══════ */
+        .group { background: var(--bg2); border-radius: var(--r); margin-bottom: 16px; overflow: hidden; }
+        .group-title {
+            font-size: 13px; font-weight: 400; color: var(--lbl3);
+            text-transform: uppercase; letter-spacing: 0.02em;
+            padding: 24px 16px 8px;
+        }
+        .row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; min-height: 44px;
+            border-bottom: .5px solid var(--sep);
+        }
+        .row:last-child { border-bottom: none; }
+        .row-label { font-size: 15px; color: var(--lbl); font-weight: 400; }
+        .row-value { font-size: 15px; color: var(--lbl3); font-weight: 400; text-align: right; }
+        .row-input {
+            background: none; border: none; color: var(--lbl);
+            font-family: var(--font); font-size: 17px; font-weight: 600;
+            text-align: right; width: 80px;
+        }
+        .row-input:focus { outline: none; color: var(--blue); }
+        .row-chevron::after { content: "›"; font-size: 20px; color: var(--lbl4); margin-left: 6px; font-weight: 300; }
+        .row-tap { cursor: pointer; transition: background .1s; }
+        .row-tap:active { background: var(--bg3); }
+
+        /* ══════ PLAN VIEW ══════ */
+        .section-title {
+            font-size: 22px; font-weight: 700; letter-spacing: -0.02em;
+            margin: 0 0 12px;
+        }
+        .phase-title {
+            font-size: 13px; font-weight: 600; color: var(--lbl3);
+            text-transform: uppercase; letter-spacing: 0.03em;
+            padding: 20px 0 6px;
+        }
+        .phase-title span {
+            font-size: 11px; padding: 2px 6px; border-radius: 4px;
+            font-weight: 700; margin-left: 6px;
+        }
+        .p1 { background: rgba(10,132,255,.15); color: var(--blue); }
+        .p2 { background: rgba(255,159,10,.15); color: var(--orange); }
+        .p3 { background: rgba(255,69,58,.15); color: var(--red); }
+
+        .week-row {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 14px 16px; border-bottom: .5px solid var(--sep);
+            cursor: pointer; transition: background .1s;
+        }
+        .week-row:active { background: var(--bg3); }
+        .week-row:last-child { border-bottom: none; }
+        .week-row.cur { background: rgba(10,132,255,.08); }
+        .week-name { font-size: 15px; font-weight: 500; }
+        .week-tag { font-size: 12px; font-weight: 600; color: var(--blue); }
+        .week-detail { display: none; padding: 0 16px 12px; }
+        .week-detail.open { display: block; }
+        .wd-desc { font-size: 13px; color: var(--lbl3); margin-bottom: 8px; }
+        .wd-day-title { font-size: 13px; font-weight: 600; color: var(--lbl2); margin: 10px 0 4px; }
+        .wd-ex { display: flex; justify-content: space-between; padding: 3px 0; font-size: 13px; }
+        .wd-ex-n { color: var(--lbl3); flex: 1; }
+        .wd-ex-i { color: var(--lbl4); white-space: nowrap; margin-left: 8px; }
+
+        /* ══════ GYM VIEW ══════ */
+        .gym-hdr {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 12px 16px; background: var(--bg2); border-radius: var(--r);
+            margin-bottom: 12px;
+        }
+        .gym-title { font-size: 17px; font-weight: 600; }
+        .gym-sub { font-size: 13px; color: var(--lbl3); }
+
+        .ex-card { background: var(--bg2); border-radius: var(--r); padding: 16px; margin-bottom: 12px; }
+        .ex-name { font-size: 20px; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 4px; }
+        .ex-tags { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+        .tag {
+            font-size: 11px; font-weight: 600; padding: 3px 8px;
+            border-radius: 6px; letter-spacing: 0.01em;
+        }
+        .tag-teal { background: rgba(100,210,255,.12); color: var(--teal); }
+        .tag-purple { background: rgba(191,90,242,.12); color: var(--purple); }
+        .tag-red { background: rgba(255,69,58,.12); color: var(--red); }
+        .ex-note { font-size: 14px; color: var(--lbl3); margin-bottom: 14px; line-height: 1.4; }
+
+        /* SET ROWS */
+        .set-row {
+            display: flex; align-items: center; gap: 12px;
+            padding: 14px; margin-bottom: 4px;
+            background: rgba(0,0,0,.25); border-radius: var(--r2);
+            border: 1.5px solid transparent; transition: all .2s;
+        }
+        .set-row.waiting { border-color: var(--sep); }
+        .set-row.active  { border-color: var(--blue); background: rgba(10,132,255,.06); }
+        .set-row.done    { border-color: rgba(48,209,88,.25); background: rgba(48,209,88,.06); }
+
+        .set-num {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px; font-weight: 700; flex-shrink: 0;
+        }
+        .set-row.waiting .set-num { background: var(--bg3); color: var(--lbl4); }
+        .set-row.active  .set-num { background: var(--blue); color: #fff; }
+        .set-row.done    .set-num { background: var(--green); color: #000; }
+        .set-info { flex: 1; }
+        .set-weight { font-size: 16px; font-weight: 600; }
+        .set-sub { font-size: 13px; color: var(--lbl3); }
+        .set-btn {
+            padding: 10px 20px; border-radius: var(--r3); border: none;
+            font-family: var(--font); font-weight: 600; font-size: 15px;
+            cursor: pointer; transition: opacity .1s;
+        }
+        .set-btn:active { opacity: .6; }
+        .set-row.waiting .set-btn { background: var(--bg4); color: var(--lbl4); }
+        .set-row.active  .set-btn { background: var(--green); color: #000; }
+        .set-row.done    .set-btn { background: rgba(48,209,88,.15); color: var(--green); }
+
+        /* Ex mini list */
+        .mini { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border-radius: var(--r2); margin-bottom: 2px; cursor: pointer; }
+        .mini:active { background: var(--bg2); }
+        .mini.cc { background: rgba(10,132,255,.06); }
+        .mini.pp { opacity: .4; }
+        .mini-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid var(--bg4); flex-shrink: 0; }
+        .mini.pp .mini-dot { background: var(--green); border-color: var(--green); }
+        .mini.cc .mini-dot { background: var(--blue); border-color: var(--blue); }
+        .mini-name { font-size: 14px; font-weight: 500; }
+        .mini-det { font-size: 12px; color: var(--lbl4); }
+
+        /* ══════ REST OVERLAY ══════ */
+        .rest-overlay {
+            display: none; position: fixed; inset: 0; z-index: 500;
+            background: rgba(0,0,0,.97);
+            flex-direction: column; justify-content: center; align-items: center;
+            padding: 32px;
+        }
+        .rest-overlay.on { display: flex; animation: vIn .2s ease-out; }
+        .rest-label { font-size: 13px; font-weight: 600; text-transform: uppercase; letter-spacing: 1.5px; color: var(--lbl3); margin-bottom: 8px; }
+        .rest-time {
+            font-size: 72px; font-weight: 200; letter-spacing: -2px;
+            font-variant-numeric: tabular-nums;
+            color: var(--lbl); margin-bottom: 24px;
+        }
+        .rest-track { width: 200px; height: 4px; background: var(--bg3); border-radius: 2px; margin-bottom: 32px; overflow: hidden; }
+        .rest-fill { height: 100%; background: var(--blue); border-radius: 2px; transition: width .5s linear; }
+        .rest-actions { display: flex; gap: 12px; }
+        .rest-btn {
+            padding: 14px 24px; border-radius: var(--r); border: none;
+            background: var(--bg2); color: var(--lbl);
+            font-family: var(--font); font-size: 15px; font-weight: 600;
+            cursor: pointer;
+        }
+        .rest-btn:active { opacity: .6; }
+        .rest-btn.skip { background: rgba(255,69,58,.12); color: var(--red); }
+        .rest-hint { margin-top: 28px; font-size: 14px; color: var(--lbl4); text-align: center; }
+
+        /* ══════ SETTINGS ══════ */
+        .week-grid { display: grid; grid-template-columns: repeat(4,1fr); gap: 6px; padding: 12px 16px; }
+        .wg-btn {
+            padding: 10px; border-radius: var(--r3); border: none;
+            background: var(--bg3); color: var(--lbl3);
+            font-family: var(--font); font-size: 14px; font-weight: 600;
+            cursor: pointer; text-align: center;
+        }
+        .wg-btn.on { background: var(--blue); color: #fff; }
+
+        .hist-row { display: flex; justify-content: space-between; padding: 10px 16px; border-bottom: .5px solid var(--sep); font-size: 14px; }
+        .hist-row:last-child { border-bottom: none; }
+        .hist-day { font-weight: 500; }
+        .hist-date { color: var(--lbl4); }
+
+        .done-screen { text-align: center; padding: 48px 24px; }
+        .done-icon { font-size: 64px; margin-bottom: 16px; }
+    </style>
+</head>
+<body>
+
+<!-- TOAST ALERT -->
+<div id="toast">Повідомлення</div>
+
+<!-- MAIN APPLICATION -->
+<div id="app">
+
+<header class="hdr">
+    <div class="hdr-title">Aesthetix</div>
+    <div class="hdr-right">
+        <div class="sync-dot ok" id="sync-dot"></div>
+        <div id="hdr-pill" class="pill pill-off">—</div>
+    </div>
+</header>
+
+<!-- VIEW: PLAN -->
+<div id="v-plan" class="view on"><div id="plan-c"></div></div>
+
+<!-- VIEW: GYM -->
+<div id="v-gym" class="view">
+    <div id="gym-empty" style="text-align:center;padding:64px 24px;">
+        <div style="font-size:48px;margin-bottom:16px;opacity:.3;">🏋️</div>
+        <div style="font-size:20px;font-weight:600;margin-bottom:6px;">Тренування не запущено</div>
+        <div style="font-size:15px;color:var(--lbl3);margin-bottom:24px;">Обери тиждень та активний день у вкладці «План»</div>
+        <button class="btn btn-blue" style="max-width:200px;margin:0 auto" onclick="go('plan')">Відкрити план</button>
+    </div>
+    <div id="gym-active" style="display:none"></div>
+</div>
+
+<!-- VIEW: SETTINGS -->
+<div id="v-settings" class="view">
+    <div class="section-title">Налаштування</div>
+
+    <!-- UTILITIES CARD -->
+    <div class="group-title">Інструменти залу</div>
+    <div class="group">
+        <div class="row row-tap" onclick="toggleWakeLock()">
+            <span class="row-label">Екран завжди увімкнений</span>
+            <span class="row-value" id="wl-status" style="color:var(--red)">Вимкнено</span>
+        </div>
+        <div class="row row-tap" onclick="testSound()">
+            <span class="row-label">Тест звуку сповіщень</span>
+            <span class="row-value" style="color:var(--blue)">Перевірити</span>
+        </div>
+    </div>
+
+    <div class="group-title">Поточний тиждень</div>
+    <div class="group">
+        <div class="week-grid" id="s-wks"></div>
+        <div class="row"><div id="s-wd" style="font-size:14px;color:var(--lbl3);line-height:1.4;"></div></div>
+    </div>
+
+    <div class="group-title">Одноповторні максимуми (1RM)</div>
+    <div class="group">
+        <div class="row"><span class="row-label">Підтягування</span><div><input class="row-input" type="number" id="i-pullups" value="20" onchange="save1RM()"> кг</div></div>
+        <div class="row"><span class="row-label">Похилий жим (верх грудей)</span><div><input class="row-input" type="number" id="i-incline" value="90" onchange="save1RM()"> кг</div></div>
+        <div class="row"><span class="row-label">Жим гантелей сидячи (плечі)</span><div><input class="row-input" type="number" id="i-ohp" value="60" onchange="save1RM()"> кг</div></div>
+        <div class="row"><span class="row-label">Присідання</span><div><input class="row-input" type="number" id="i-squat" value="120" onchange="save1RM()"> кг</div></div>
+        <div class="row"><span class="row-label">Румунська тяга</span><div><input class="row-input" type="number" id="i-rdl" value="130" onchange="save1RM()"> кг</div></div>
+        <div class="row"><span class="row-label">Французький жим</span><div><input class="row-input" type="number" id="i-cgbp" value="85" onchange="save1RM()"> кг</div></div>
+    </div>
+
+    <div class="group-title">Історія тренувань</div>
+    <div class="group" id="hist-list"><div class="row"><span class="row-label" style="color:var(--lbl4)">Завантаження...</span></div></div>
+
+    <div class="group-title">Керування даними</div>
+    <div class="group">
+        <div class="row row-tap" onclick="resetAllData()" style="justify-content:center"><span style="color:var(--red);font-weight:500;">Скинути весь прогрес</span></div>
+    </div>
+</div>
+
+<!-- REST OVERLAY -->
+<div class="rest-overlay" id="rov">
+    <div class="rest-label">Відпочинок</div>
+    <div class="rest-time" id="r-cd">02:30</div>
+    <div class="rest-track"><div class="rest-fill" id="r-bar"></div></div>
+    <div class="rest-actions">
+        <button class="rest-btn" onclick="adjR(-15)">−15 с</button>
+        <button class="rest-btn" onclick="adjR(15)">+15 с</button>
+        <button class="rest-btn skip" onclick="skipR()">Пропустити</button>
+    </div>
+    <div class="rest-hint" id="r-hint">Далі: Підхід 2 / 4</div>
+</div>
+
+<!-- TAB BAR -->
+<nav class="tab-bar">
+    <button class="tab-item on" id="n-plan" onclick="go('plan')"><svg viewBox="0 0 24 24"><path d="M19 3H5c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h14c1.1 0 2-.9 2-2V5c0-1.1-.9-2-2-2zm-5 14H7v-2h7v2zm3-4H7v-2h10v2zm0-4H7V7h10v2z"/></svg>План</button>
+    <button class="tab-item" id="n-gym" onclick="go('gym')"><svg viewBox="0 0 24 24"><path d="M20.57 14.86L22 13.43l-3-3-1.43 1.43 1.02 1.02-3.41 3.41L11 12.14l-6.15 6.15 1.41 1.41L11 15l4.16 4.16 4.39-4.39 1.02 1.09zM4.14 12L3 13.14l3 3 1.43-1.43-1.02-1.02 3.41-3.41L15 14.86l6.15-6.15-1.41-1.41L15 12l-4.16-4.16-4.39 4.39-1.02-1.09L4.14 12z"/></svg>Тренування</button>
+    <button class="tab-item" id="n-settings" onclick="go('settings')"><svg viewBox="0 0 24 24"><path d="M19.14 12.94c.04-.3.06-.61.06-.94 0-.32-.02-.64-.07-.94l2.03-1.58c.18-.14.23-.41.12-.61l-1.92-3.32c-.12-.22-.37-.29-.59-.22l-2.39.96c-.5-.38-1.03-.7-1.62-.94l-.36-2.54c-.04-.24-.24-.41-.48-.41h-3.84c-.24 0-.43.17-.47.41l-.36 2.54c-.59.24-1.13.57-1.62.94l-2.39-.96c-.22-.08-.47 0-.59.22L2.74 8.87c-.12.21-.08.47.12.61l2.03 1.58c-.05.3-.09.63-.09.94s.02.64.07.94l-2.03 1.58c-.18.14-.23.41-.12.61l1.92 3.32c.12.22.37.29.59.22l2.39-.96c.5.38 1.03.7 1.62.94l.36 2.54c.05.24.24.41.48.41h3.84c.24 0 .44-.17.47-.41l.36-2.54c.59-.24 1.13-.56 1.62-.94l2.39.96c.22.08.47 0 .59-.22l1.92-3.32c.12-.22.07-.47-.12-.61l-2.01-1.58zM12 15.6c-1.98 0-3.6-1.62-3.6-3.6s1.62-3.6 3.6-3.6 3.6 1.62 3.6 3.6-1.62 3.6-3.6 3.6z"/></svg>Налаштування</button>
+</nav>
+
+</div>
+
+<script>
+/* ═══════ SOUNDS ═══════ */
+const AC=window.AudioContext||window.webkitAudioContext;let _ac;
+function ac(){if(!_ac)_ac=new AC();return _ac;}
+function sndDone(){try{const c=ac(),t=c.currentTime;[[698.46,0],[880,.12]].forEach(([f,d])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.2,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.14);o.connect(g);g.connect(c.destination);o.start(t+d);o.stop(t+d+.14);});}catch(e){}}
+function sndNav(){try{const c=ac(),t=c.currentTime;[[587.33,0],[659.25,.08],[783.99,.16]].forEach(([f,d])=>{const o=c.createOscillator(),g=c.createGain();o.type='sine';o.frequency.value=f;g.gain.setValueAtTime(.18,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.1);o.connect(g);g.connect(c.destination);o.start(t+d);o.stop(t+d+.1);});}catch(e){}}
+function sndAlarm(){try{const c=ac(),t=c.currentTime;[[523.25,0],[659.25,.16],[783.99,.32]].forEach(([f,d])=>{const o=c.createOscillator(),g=c.createGain();o.type='triangle';o.frequency.value=f;g.gain.setValueAtTime(.3,t+d);g.gain.exponentialRampToValueAtTime(.001,t+d+.22);o.connect(g);g.connect(c.destination);o.start(t+d);o.stop(t+d+.22);});}catch(e){}}
+function testSound() { sndDone(); setTimeout(sndNav, 400); setTimeout(sndAlarm, 800); toast('Звуки відтворено'); }
+
+/* ═══════ WAKE LOCK API ═══════ */
+let wakeLock = null;
+async function toggleWakeLock() {
+    const statusEl = document.getElementById('wl-status');
+    if (wakeLock) {
+        try {
+            await wakeLock.release();
+            wakeLock = null;
+            statusEl.textContent = 'Вимкнено';
+            statusEl.style.color = 'var(--red)';
+            toast('Режим автовимкнення екрану відновлено');
+        } catch (err) { console.error(err); }
+    } else {
+        try {
+            if ('wakeLock' in navigator) {
+                wakeLock = await navigator.wakeLock.request('screen');
+                statusEl.textContent = 'Увімкнено';
+                statusEl.style.color = 'var(--green)';
+                toast('Екран буде постійно увімкнений');
+                wakeLock.addEventListener('release', () => {
+                    if(!wakeLock) {
+                        statusEl.textContent = 'Вимкнено';
+                        statusEl.style.color = 'var(--red)';
+                    }
+                });
+            } else {
+                toast('Wake Lock не підтримується цим браузером');
+            }
+        } catch (err) {
+            toast('Не вдалося увімкнути постійний екран');
+        }
+    }
+}
+
+// Re-request wake lock if tab becomes visible again
+document.addEventListener('visibilitychange', async () => {
+    if (wakeLock !== null && document.visibilityState === 'visible') {
+        try {
+            wakeLock = await navigator.wakeLock.request('screen');
+        } catch (err) {}
+    }
+});
+
+/* ═══════ TOAST HELPERS ═══════ */
+let toastTimeout;
+function toast(msg) {
+    const el = document.getElementById('toast');
+    el.textContent = msg;
+    el.classList.add('show');
+    clearTimeout(toastTimeout);
+    toastTimeout = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+/* ═══════ DATA ═══════ */
+const WK={
+1:{n:"Фаза 1 · Об'ємне накопичення",pm:1,rm:0,sm:0,rpe:0,d:"Тижні 1-4: Саркоплазматична гіпертрофія. Високий об'єм, темп 3-0-1-1. База RPE 8."},
+2:{n:"Фаза 1 · Прогресія об'єму",pm:1.025,rm:0,sm:0,rpe:.5,d:"Збільшення ваги на +2.5% при збереженні об'єму. RPE 8.5. Скорочення відпочинку на 5с."},
+3:{n:"Фаза 1 · Піковий пампінг",pm:1.05,rm:0,sm:0,rpe:1,d:"+5% ваги. Останній підхід кожної вправи виконується до відмови (RPE 9-10)."},
+4:{n:"Фаза 1 · Активний делоад",pm:.7,rm:0,sm:-2,rpe:-2,d:"Зниження об'єму на 50% та ваги на 30% для відновлення суглобів та ЦНС перед силовою фазою. RPE 6."},
+5:{n:"Фаза 2 · Сила та щільність",pm:1.075,rm:-2,sm:0,rpe:.5,d:"Тижні 5-8: Міофібрилярна гіпертрофія. Важкі базові рухи на 5-8 повторів (+7.5% ваги). RPE 8.5."},
+6:{n:"Фаза 2 · Силовий прогрес",pm:1.1,rm:-2,sm:0,rpe:1,d:"Силовий прорив. +10% ваги від початкової. Контроль негативної фази. RPE 9."},
+7:{n:"Фаза 2 · Пікова потужність",pm:1.125,rm:-2,sm:0,rpe:1.5,d:"Максимальне навантаження (+12.5%). Останній підхід базових вправ — AMRAP (максимум повторів). RPE 9.5-10."},
+8:{n:"Фаза 2 · Нейронний делоад",pm:.7,rm:0,sm:-2,rpe:-2,d:"Розвантаження ЦНС перед фазою рельєфу та суперсетів. Зниження об'єму. RPE 6."},
+9:{n:"Фаза 3 · Деталізація & Памп",pm:1.025,rm:2,sm:0,rpe:.5,d:"Тижні 9-12: Висока інтенсивність, робота на 12-15 повторів. Паузи скорочені до 60-75с. RPE 9."},
+10:{n:"Фаза 3 · Максимальна щільність",pm:1.05,rm:2,sm:0,rpe:1,d:"Додавання подвійних дроп-сетів на останні підходи ізоляції. RPE 9.5."},
+11:{n:"Фаза 3 · Абсолютна відмова",pm:1.075,rm:2,sm:1,rpe:2,d:"Пікова інтенсивність. Суперсети на руки та дельти. Робота за межу відмови. RPE 10."},
+12:{n:"Фаза 3 · Вихід на форму",pm:.65,rm:0,sm:-2,rpe:-3,d:"Зливання води та глікогенове розвантаження. Вага -35%, легкий памп без відмови. Вихід на пікову форму."}};
+
+const DY={
+mon:{nm:"Понеділок",fc:"Pull · Спина (V-Taper), Дельти, Біцепс",ex:[
+{n:"Підтягування з вагою",s:4,r:8,k:"pullups",p:.70,rpe:8.5,rest:150,tp:"3-1-1-1",nt:"Повна амплітуда. Акцент на ширину спини.",tg:"Спина (ширина)"},
+{n:"Тяга горизонтального блоку",s:3,r:12,k:"",p:0,rpe:8,rest:90,tp:"3-0-1-1",nt:"Тягни рукоять до низу живота, максимально зводь лопатки.",tg:"Спина (товщина)"},
+{n:"Пуловер на верхньому блоці",s:3,r:12,k:"",p:0,rpe:8.5,rest:90,tp:"3-0-1-0",nt:"Прямі руки, фокусуйся на розтягуванні та ізоляції крил спини.",tg:"Спина (ізоляція)"},
+{n:"Махи в нахилі (задня дельта)",s:4,r:18,k:"",p:0,rpe:9,rest:75,tp:"2-0-1-0",nt:"Робота задньої дельти без інерції.",tg:"Задня дельта"},
+{n:"Зворотний метелик (зворотний пек-дек)",s:3,r:15,k:"",p:0,rpe:8.5,rest:75,tp:"2-0-1-1",nt:"Фіксація на 1 сек у точці скорочення.",tg:"Задня дельта"},
+{n:"Згинання рук на нижньому блоці",s:3,r:12,k:"",p:0,rpe:8,rest:75,tp:"3-0-1-1",nt:"Постійне напруження в біцепсі по всій амплітуді.",tg:"Біцепс"}]},
+wed:{nm:"Середа",fc:"Legs & Torso · Ніжки, Прес та Плоский живіт",ex:[
+{n:"Розгинання ніг у тренажері",s:4,r:15,k:"",p:0,rpe:8.5,rest:90,tp:"2-0-1-1",nt:"Повна ізоляція квадрицепса. Пауза 1 сек вгорі.",tg:"Квадрицепс"},
+{n:"Згинання ніг у тренажері (лежачи)",s:4,r:12,k:"",p:0,rpe:8.5,rest:90,tp:"3-0-1-0",nt:"Контрольований опуск ваги. Ізоляція задньої поверхні.",tg:"Задня поверхня"},
+{n:"Болгарські спліт-присідання",s:3,r:12,k:"",p:0,rpe:8.5,rest:120,tp:"2-1-1-0",nt:"Упор на п'яту передньої ноги.",tg:"Стегна"},
+{n:"Румунська тяга з гантелями",s:3,r:12,k:"rdl",p:.50,rpe:8,rest:120,tp:"3-1-1-0",nt:"Контроль попереку. Дуже глибоке розтягування м'язів стегна.",tg:"Задня поверхня"},
+{n:"Підйоми на носки сидячи",s:4,r:20,k:"",p:0,rpe:9,rest:60,tp:"2-1-1-1",nt:"1 сек паузи у піковому скороченні вгорі.",tg:"Литки"},
+{n:"Підйоми ніг у висі",s:4,r:15,k:"",p:0,rpe:9.5,rest:75,tp:"2-0-1-1",nt:"Скручуй таз догори, робота над нижнім пресом.",tg:"Прес / Кор"},
+{n:"Скручування на підлозі (кранчі)",s:3,r:20,k:"",p:0,rpe:8.5,rest:60,tp:"2-1-1-1",nt:"Потужне скручування живота з акцентом на верхній прес.",tg:"Прес / Кор"},
+{n:"Вакуум живота",s:4,r:5,k:"",p:0,rpe:6,rest:60,tp:"HOLD",nt:"Утримуй вакуум живота 15-20 сек на повний видих для звуження талії.",tg:"Прес (поперечний)"}]},
+fri:{nm:"П'ятниця",fc:"Push · Тільки ВЕРХ грудей, 3D Плечі, Трицепс",ex:[
+{n:"Жим гантелей під кутом вгору 30-45°",s:4,r:10,k:"incline",p:.70,rpe:8.5,rest:150,tp:"3-1-1-0",nt:"Верхня ключична частина грудей. Опускай глибоко до розтягування.",tg:"Груди (верх)"},
+{n:"Жим штанги під кутом вгору 30°",s:3,r:8,k:"incline",p:.65,rpe:8.5,rest:150,tp:"3-1-1-0",nt:"Опускай гриф під шию. Робота виключно на верх грудей.",tg:"Груди (верх)"},
+{n:"Зведення в кросовері знизу-вгору",s:4,r:15,k:"",p:0,rpe:9,rest:75,tp:"2-1-1-1",nt:"Зведення рук перед обличчям. Робота на верхній внутрішній шов грудних.",tg:"Груди (ізоляція)"},
+{n:"Зведення рук з гантелями під кутом",s:3,r:12,k:"",p:0,rpe:8.5,rest:90,tp:"3-1-1-0",nt:"Похила лава 30°. Розтягування верхньої частини грудей без жиму.",tg:"Груди (ізоляція)"},
+{n:"Махи гантелями стоячи",s:4,r:15,k:"",p:0,rpe:9.5,rest:75,tp:"2-0-1-1",nt:"Тягни ліктями до паралелі з підлогою для ширини плечей.",tg:"Середня дельта"},
+{n:"Розгинання рук на блоці (мотузка)",s:3,r:12,k:"",p:0,rpe:8.5,rest:75,tp:"3-0-1-1",nt:"Розводь кінці мотузки в сторони у нижній точці скорочення.",tg:"Трицепс"}]},
+sat:{nm:"Субота",fc:"Arms · Ізоляційний пампінг рук та плечей",ex:[
+{n:"Французький жим з гантелями",s:3,r:10,k:"cgbp",p:.40,rpe:8.5,rest:120,tp:"3-1-1-0",nt:"Тримай лікті нерухомими, опускай гантелі за голову.",tg:"Трицепс"},
+{n:"Згинання рук зі штангою стоячи",s:3,r:10,k:"",p:0,rpe:8.5,rest:90,tp:"3-0-1-0",nt:"Контрольований опуск 3 сек. Без розгойдування.",tg:"Біцепс"},
+{n:"Махи стоячи (середня дельта)",s:5,r:18,k:"",p:0,rpe:9.5,rest:75,tp:"2-0-1-0",nt:"Останній підхід — потрійний дроп-сет.",tg:"Середня дельта"},
+{n:"Тяга на задню дельту (Facepulls)",s:4,r:15,k:"",p:0,rpe:9,rest:75,tp:"2-1-1-1",nt:"Тягни мотузку до чола, розводячи лікті в сторони.",tg:"Задня дельта"},
+{n:"Розгинання рук над головою на блоці",s:3,r:12,k:"",p:0,rpe:8.5,rest:75,tp:"3-0-1-1",nt:"Французький жим на блоці з мотузкою з-за голови.",tg:"Трицепс"},
+{n:"Молоткові згинання рук",s:3,r:12,k:"",p:0,rpe:8.5,rest:75,tp:"3-0-1-0",nt:"Розвиток брахіалісу (товщина рук). Великі пальці вгору.",tg:"Біцепс/Брахіаліс"}]},
+sun:{nm:"Неділя",fc:"Cardio & Torso · Стабілізація кору, Живіт & Прес",ex:[
+{n:"LISS Кардіо (хідьба/велосипед)",s:1,r:45,k:"",p:0,rpe:5,rest:0,tp:"LISS",nt:"Пульс 120-130 уд/хв. Прискорює спалення жиру та відновлення.",tg:"Кардіо"},
+{n:"Планка на ліктях",s:3,r:60,k:"",p:0,rpe:8,rest:60,tp:"HOLD",nt:"Утримуй планку 60 сек з ідеально рівною лінією тіла.",tg:"Прес / Кор"},
+{n:"Бічна планка (косі м'язи)",s:3,r:45,k:"",p:0,rpe:8,rest:60,tp:"HOLD",nt:"Утримуй бічну планку по 45 сек на кожну сторону для стабільності кору.",tg:"Прес / Косі"},
+{n:"Вакуум живота",s:3,r:5,k:"",p:0,rpe:6,rest:60,tp:"HOLD",nt:"3 підходи на повний видих з утриманням живота під ребрами.",tg:"Прес (поперечний)"}]}};
+
+const KM={pullups:'i-pullups',incline:'i-incline',ohp:'i-ohp',squat:'i-squat',rdl:'i-rdl',cgbp:'i-cgbp'};
+
+/* ═══════ STATE ═══════ */
+let S={tab:'plan',week:1,workout:null,exIdx:0,done:{},mx:{pullups:20,incline:90,ohp:60,squat:120,rdl:130,cgbp:85}};
+let COMPLETED={}; // { "YYYY-MM-DD": ["mon", "wed"] }
+let USER=null;
+let TOKEN=null;
+let _st=null,_ri=null,_rEnd=0,_rTot=0,_rHint='',_rAA=false;
+let isRegisterMode=false;
+
+function getTodayString() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+}
+
+function hasCompletedToday(dayKey) {
+    const today = getTodayString();
+    const fullKey = S.week + '_' + dayKey;
+    return COMPLETED[today] && COMPLETED[today].includes(fullKey);
+}
+
+function syncUI(s){document.getElementById('sync-dot').className='sync-dot '+s;}
+
+// Local hashing helper
+async function hashPW(pw) {
+    const msgBuffer = new TextEncoder().encode(pw);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
+}
+
+async function sLoad(){
+    syncUI('saving');
+    const stateStr = localStorage.getItem('ax_state');
+    if (stateStr) {
+        try { S = JSON.parse(stateStr); } catch(e){}
+    }
+    const compStr = localStorage.getItem('ax_completed');
+    if (compStr) {
+        try { COMPLETED = JSON.parse(compStr); } catch(e){}
+    }
+    syncUI('ok');
+}
+
+async function sSave(){
+    syncUI('saving');
+    localStorage.setItem('ax_state', JSON.stringify(S));
+    localStorage.setItem('ax_completed', JSON.stringify(COMPLETED));
+    syncUI('ok');
+}
+
+function save(){
+    sSave();
+}
+
+async function sLog(entry){
+    syncUI('saving');
+    const today = getTodayString();
+    if (!COMPLETED[today]) COMPLETED[today] = [];
+    const fullKey = S.week + '_' + S.workout;
+    if (!COMPLETED[today].includes(fullKey)) {
+        COMPLETED[today].push(fullKey);
+    }
+    let history = [];
+    const histStr = localStorage.getItem('ax_history');
+    if (histStr) {
+        try { history = JSON.parse(histStr); } catch(e){}
+    }
+    history.push({ ...entry, dayKey: fullKey, _ts: new Date().toISOString() });
+    if (history.length > 500) history = history.slice(-500);
+    localStorage.setItem('ax_history', JSON.stringify(history));
+    save();
+    syncUI('ok');
+}
+
+async function loadHist(){
+    const c=document.getElementById('hist-list');
+    let history = [];
+    const histStr = localStorage.getItem('ax_history');
+    if (histStr) {
+        try { history = JSON.parse(histStr); } catch(e){}
+    }
+    if(!history.length){
+        c.innerHTML='<div class="row"><span class="row-label" style="color:var(--lbl4)">Ще немає завершених тренувань</span></div>';
+        return;
+    }
+    let h='';
+    history.slice().reverse().slice(0,20).forEach(x=>{
+        const d=new Date(x._ts);
+        h+=`<div class="hist-row"><span class="hist-day">${x.day||'?'} · Тижд. ${x.week||'?'}</span><span class="hist-date">${d.toLocaleDateString('uk-UA',{day:'numeric',month:'short'})}</span></div>`;
+    });
+    c.innerHTML=h;
+}
+
+/* ═══════ AUTH ═══════ */
+function resetAllData(){
+    if(!confirm('Ви впевнені, що хочете видалити весь свій прогрес і 1RM? Цю дію неможливо скасувати.'))return;
+    localStorage.clear();
+    location.reload();
+}
+
+async function boot(){
+    await sLoad();
+    
+    for(let k in KM){
+        const el=document.getElementById(KM[k]);
+        if(el) el.value=S.mx[k]||0;
+    }
+    pill();
+    go(S.tab);
+    loadHist();
+}
+
+/* ═══════ NAV ═══════ */
+function go(t){
+    S.tab=t;
+    save();
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('on'));
+    document.getElementById('v-'+t).classList.add('on');
+    document.querySelectorAll('.tab-item').forEach(b=>b.classList.remove('on'));
+    document.getElementById('n-'+t).classList.add('on');
+    if(t==='gym') rGym();
+    if(t==='plan') rPlan();
+    if(t==='settings') rSet();
+}
+
+function pill(){
+    const p=document.getElementById('hdr-pill');
+    if(S.workout){
+        p.textContent=DY[S.workout].nm;
+        p.className='pill pill-on';
+    }else{
+        p.textContent='—';
+        p.className='pill pill-off';
+    }
+}
+
+/* ═══════ CALC ═══════ */
+function wp(){return WK[S.week];}
+function gS(e){return Math.max(1,e.s+wp().sm);}
+function gR(e){return Math.max(1,e.r+wp().rm);}
+function gRpe(e){return Math.max(3,Math.min(10,e.rpe+wp().rpe)).toFixed(1);}
+function gW(e){if(!e.k)return'';const m=S.mx[e.k];if(!m)return'';const w=Math.round(m*e.p*wp().pm*2)/2;return e.k==='pullups'?`+${w}`:`${w}`;}
+
+/* ═══════ PLAN ═══════ */
+function rPlan(){
+    const c=document.getElementById('plan-c');let h='<div class="section-title">Програма · 3 місяці</div>';
+    const ph=[{l:"Місяць 1 · Об'єм та Форма",c:"p1",w:[1,2,3,4]},{l:"Місяць 2 · Сила та Товщина",c:"p2",w:[5,6,7,8]},{l:"Місяць 3 · Рельєф та Пік",c:"p3",w:[9,10,11,12]}];
+    ph.forEach(p=>{
+        h+=`<div class="phase-title">${p.l} <span class="${p.c}">Фаза</span></div><div class="group">`;
+        p.w.forEach(wk=>{
+            const pr=WK[wk],cur=S.week===wk;
+            h+=`<div class="week-row ${cur?'cur':''}" onclick="togW(${wk})"><span class="week-name">Тиждень ${wk} · ${pr.n}</span><span class="week-tag">${cur?'Поточний':''}</span></div>`;
+            h+=`<div class="week-detail" id="wd-${wk}"><div class="wd-desc">${pr.d}</div>`;
+            for(let dk in DY){
+                const d=DY[dk];
+                if(!d.ex.length)continue;
+                h+=`<div class="wd-day-title">${d.nm} — ${d.fc}</div>`;
+                const ow=S.week;S.week=wk;
+                d.ex.forEach(e=>{
+                    h+=`<div class="wd-ex"><span class="wd-ex-n">${e.n}</span><span class="wd-ex-i">${gS(e)}×${gR(e)} ${gW(e)?gW(e)+' кг':''}</span></div>`;
+                });
+                S.week=ow;
+            }
+            h+=`<button class="btn btn-blue" style="margin:12px 0 4px;font-size:15px;padding:14px" onclick="event.stopPropagation();pickW(${wk})">Обрати тиждень ${wk}</button></div>`;
+        });
+        h+=`</div>`;
+    });
+    c.innerHTML=h;
+}
+function togW(wk){const d=document.getElementById('wd-'+wk);if(d.classList.contains('open')){d.classList.remove('open');}else{document.querySelectorAll('.week-detail').forEach(x=>x.classList.remove('open'));d.classList.add('open');}}
+function pickW(wk){S.week=wk;save();showDP(wk);}
+
+function showDP(wk){
+    const c=document.getElementById('plan-c');let h=`<button class="btn btn-gray btn-sm" style="margin-bottom:14px" onclick="rPlan()">← Назад</button>`;
+    h+=`<div class="section-title">Тиждень ${wk} · ${WK[wk].n}</div><div class="wd-desc" style="margin-bottom:14px;font-size:14px;color:var(--lbl3)">${WK[wk].d}</div>`;
+    for(let dk in DY){
+        const d=DY[dk];
+        const isDoneToday = hasCompletedToday(dk);
+        
+        h+=`<div class="group" style="cursor:${d.ex.length?'pointer':'default'};${d.ex.length?'':'opacity:.4'}" ${d.ex.length?`onclick="clickDay('${dk}')"`:''}>`;
+        h+=`<div class="row" style="${isDoneToday?'background:rgba(48,209,88,.05)':''}">`;
+        h+=`<span class="row-label" style="font-weight:600;display:flex;align-items:center;gap:6px">${d.nm} ${isDoneToday?'<span style="font-size:11px;color:var(--green);font-weight:700;text-transform:uppercase">✓ Виконано</span>':''}</span>`;
+        h+=`<span class="row-value">${d.fc.split('·')[0].trim()}</span></div>`;
+        
+        if(d.ex.length){
+            d.ex.forEach(e=>{
+                const w=gW(e);
+                h+=`<div class="row" style="padding:8px 16px"><span style="font-size:14px;color:var(--lbl3)">${e.n}</span><span style="font-size:13px;color:var(--lbl4)">${gS(e)}×${gR(e)} ${w?w+' кг':''}</span></div>`;
+            });
+        }else{
+            h+=`<div class="row"><span style="font-size:14px;color:var(--lbl4)">Відпочинок</span></div>`;
+        }
+        h+=`</div>`;
+    }
+    c.innerHTML=h;
+}
+
+function clickDay(dk) {
+    if (hasCompletedToday(dk)) {
+        if (!confirm('Ти вже виконав це тренування сьогодні. Пройти його ще раз?')) {
+            return;
+        }
+    }
+    startW(dk);
+}
+
+/* ═══════ GYM ═══════ */
+function startW(dk){S.workout=dk;S.exIdx=0;S.done={};save();sndDone();pill();go('gym');}
+function quitW(){if(!confirm('Завершити без збереження?'))return;S.workout=null;S.done={};save();pill();go('plan');}
+
+function rGym(){
+    const emp=document.getElementById('gym-empty'),act=document.getElementById('gym-active');
+    if(!S.workout){emp.style.display='block';act.style.display='none';return;}
+    emp.style.display='none';act.style.display='block';
+    const d=DY[S.workout],exs=d.ex;
+    
+    if(S.exIdx>=exs.length){
+        act.innerHTML=`<div class="done-screen"><div class="done-icon">🏆</div><div style="font-size:22px;font-weight:700;color:var(--green);margin-bottom:6px">Тренування завершено</div><div style="font-size:15px;color:var(--lbl3);margin-bottom:24px">Тиждень ${S.week} · ${d.nm}</div><button class="btn btn-blue" style="max-width:240px;margin:0 auto" onclick="finW()">Зберегти та вийти</button></div>`;
+        sndAlarm();
+        return;
+    }
+    
+    const e=exs[S.exIdx],sets=gS(e),reps=gR(e),rpe=gRpe(e),w=gW(e);
+    let h='';
+    h+=`<div class="gym-hdr"><div><div class="gym-title">${d.nm}</div><div class="gym-sub">Тиждень ${S.week} · ${d.fc}</div></div><button class="btn-quit" onclick="quitW()">Завершити</button></div>`;
+    h+=`<div class="ex-card"><div class="ex-name">${e.n}</div><div class="ex-tags"><span class="tag tag-teal">${e.tg}</span><span class="tag tag-purple">${e.tp}</span><span class="tag tag-red">RPE ${rpe}</span></div><div class="ex-note">${e.nt}</div>`;
+    
+    let fo=-1;
+    for(let i=0;i<sets;i++){
+        const k=`${S.workout}_${S.exIdx}_${i}`,dn=!!S.done[k];
+        if(!dn&&fo===-1)fo=i;
+        const cl=dn?'done':(fo===i?'active':'waiting');
+        h+=`<div class="set-row ${cl}"><div class="set-num">${dn?'✓':(i+1)}</div><div class="set-info"><div class="set-weight">${w?w+' кг':'Робоча вага'} × ${reps}</div><div class="set-sub">Підхід ${i+1} з ${sets}</div></div><button class="set-btn" onclick="logS('${k}',${e.rest},${i},${sets})">${dn?'✓':(fo===i?'Готово':'—')}</button></div>`;
+    }
+    h+=`</div>`;
+    
+    const allD=fo===-1;
+    h+=`<div style="display:flex;gap:8px;margin-bottom:12px"><button class="btn btn-gray" style="flex:1;padding:14px;font-size:15px" onclick="navE(-1)">← Назад</button>`;
+    h+=allD?`<button class="btn btn-green" style="flex:2;padding:14px;font-size:15px" onclick="navE(1)">Далі →</button>`:`<button class="btn btn-gray" style="flex:1;padding:14px;font-size:15px" onclick="navE(1)">Пропустити →</button>`;
+    h+=`</div><div style="margin-top:4px">`;
+    
+    exs.forEach((x,i)=>{
+        const cl=i<S.exIdx?'pp':(i===S.exIdx?'cc':'');
+        h+=`<div class="mini ${cl}" onclick="jumpE(${i})"><div class="mini-dot"></div><div><div class="mini-name">${x.n}</div><div class="mini-det">${gS(x)}×${gR(x)} ${gW(x)?gW(x)+' кг':''}</div></div></div>`;
+    });
+    h+=`</div>`;
+    act.innerHTML=h;
+}
+
+function finW(){
+    sLog({day:DY[S.workout].nm, week:S.week, focus:DY[S.workout].fc, dayKey:S.week + '_' + S.workout});
+    S.workout=null;
+    S.done={};
+    save();
+    pill();
+    go('plan');
+    loadHist();
+}
+
+function logS(k,rest,si,tot){
+    if(S.done[k]){
+        delete S.done[k];
+        save();
+        rGym();
+        return;
+    }
+    S.done[k]=true;
+    save();
+    sndDone();
+    if(navigator.vibrate)navigator.vibrate(50);
+    
+    if(si+1<tot){
+        _rHint=`Далі: Підхід ${si+2} з ${tot}`;
+    }else{
+        const d=DY[S.workout];
+        _rHint=S.exIdx+1<d.ex.length?`Далі: ${d.ex[S.exIdx+1].n}`:'Останній підхід!';
+    }
+    
+    let allD=true;
+    const sets=gS(DY[S.workout].ex[S.exIdx]);
+    for(let i=0;i<sets;i++){
+        if(!S.done[`${S.workout}_${S.exIdx}_${i}`]){allD=false;break;}
+    }
+    startR(rest,allD);
+    rGym();
+}
+
+function navE(d){
+    const dy=DY[S.workout];
+    S.exIdx=Math.max(0,Math.min(dy.ex.length,S.exIdx+d));
+    save();
+    sndNav();
+    rGym();
+}
+
+function jumpE(i){
+    S.exIdx=i;
+    save();
+    rGym();
+}
+
+/* ═══════ REST TIMER ═══════ */
+function startR(sec,aa){
+    if(sec<=0){if(aa)navE(1);return;}
+    _rTot=sec;
+    _rEnd=Date.now()+sec*1000;
+    _rAA=aa;
+    document.getElementById('rov').classList.add('on');
+    document.getElementById('r-hint').textContent=_rHint;
+    tickR();
+    if(_ri)clearInterval(_ri);
+    _ri=setInterval(()=>{
+        const l=Math.max(0,Math.ceil((_rEnd-Date.now())/1000));
+        if(l<=0){
+            clearInterval(_ri);
+            _ri=null;
+            sndAlarm();
+            if(navigator.vibrate)navigator.vibrate([120,60,120,60,120]);
+            document.getElementById('rov').classList.remove('on');
+            if(_rAA)navE(1);
+            rGym();
+        } else tickR();
+    },250);
+}
+
+// Tick timer
+function tickR(){
+    const l=Math.max(0,Math.ceil((_rEnd-Date.now())/1000)),m=Math.floor(l/60),s=l%60;
+    document.getElementById('r-cd').textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    document.getElementById('r-bar').style.width=(_rTot>0?(l/_rTot)*100:0)+'%';
+}
+
+function adjR(s){
+    _rEnd+=s*1000;
+    _rTot=Math.max(1,_rTot+s);
+    tickR();
+}
+
+function skipR(){
+    if(_ri){clearInterval(_ri);_ri=null;}
+    document.getElementById('rov').classList.remove('on');
+    sndNav();
+    rGym();
+}
+
+/* ═══════ SETTINGS ═══════ */
+function rSet(){
+    const g=document.getElementById('s-wks');let h='';
+    for(let i=1;i<=12;i++) h+=`<button class="wg-btn ${S.week===i?'on':''}" onclick="setWk(${i})">${i}</button>`;
+    g.innerHTML=h;
+    document.getElementById('s-wd').innerHTML=`<strong>Тиждень ${S.week} · ${WK[S.week].n}:</strong> ${WK[S.week].d}`;
+    loadHist();
+}
+function setWk(w){S.week=w;save();rSet();}
+function save1RM(){for(let k in KM)S.mx[k]=parseFloat(document.getElementById(KM[k]).value)||0;save();}
+
+/* ═══════ INIT ═══════ */
+window.onload=()=>{
+    boot();
+};
+</script>
+</body>
+</html>
