@@ -318,22 +318,8 @@
 <!-- TOAST ALERT -->
 <div id="toast">Повідомлення</div>
 
-<!-- AUTH VIEW -->
-<div id="login" class="login">
-    <div class="login-icon">🏋️</div>
-    <div class="login-title" id="auth-title">Aesthetix</div>
-    <div class="login-sub" id="auth-sub">Авторизуйся для захисту та збереження прогресу</div>
-    
-    <div class="login-form">
-        <input id="auth-username" type="text" placeholder="Ім'я користувача" autocomplete="off">
-        <input id="auth-password" type="password" placeholder="Пароль" autocomplete="off">
-        <button class="btn btn-blue" onclick="submitAuth()" id="auth-btn">Увійти</button>
-    </div>
-    <div class="auth-toggle" onclick="toggleAuthMode()" id="auth-toggle">Немає акаунту? Зареєструватись</div>
-</div>
-
 <!-- MAIN APPLICATION -->
-<div id="app" style="display:none">
+<div id="app">
 
 <header class="hdr">
     <div class="hdr-title">Aesthetix</div>
@@ -393,10 +379,9 @@
     <div class="group-title">Історія тренувань</div>
     <div class="group" id="hist-list"><div class="row"><span class="row-label" style="color:var(--lbl4)">Завантаження...</span></div></div>
 
-    <div class="group-title">Акаунт</div>
+    <div class="group-title">Керування даними</div>
     <div class="group">
-        <div class="row"><span class="row-label">Юзер</span><span class="row-value" id="s-user">—</span></div>
-        <div class="row row-tap" onclick="doLogout()" style="justify-content:center"><span style="color:var(--red);font-weight:500;">Вийти з акаунту</span></div>
+        <div class="row row-tap" onclick="resetAllData()" style="justify-content:center"><span style="color:var(--red);font-weight:500;">Скинути весь прогрес</span></div>
     </div>
 </div>
 
@@ -630,71 +615,13 @@ async function loadHist(){
 }
 
 /* ═══════ AUTH ═══════ */
-function toggleAuthMode() {
-    isRegisterMode = !isRegisterMode;
-    document.getElementById('auth-title').textContent = isRegisterMode ? 'Реєстрація' : 'Aesthetix';
-    document.getElementById('auth-sub').textContent = isRegisterMode ? 'Створи новий акаунт із паролем' : 'Авторизуйся для захисту та збереження прогресу';
-    document.getElementById('auth-btn').textContent = isRegisterMode ? 'Зареєструватись' : 'Увійти';
-    document.getElementById('auth-toggle').textContent = isRegisterMode ? 'Вже є акаунт? Увійти' : 'Немає акаунту? Зареєструватись';
-}
-
-async function submitAuth() {
-    const u = document.getElementById('auth-username').value.trim();
-    const p = document.getElementById('auth-password').value.trim();
-    if(!u || !p) {
-        toast('Заповни ім\'я та пароль');
-        return;
-    }
-    
-    const localHash = localStorage.getItem('ax_password_hash');
-    const localUser = localStorage.getItem('ax_user');
-    
-    if (isRegisterMode) {
-        if (localHash) {
-            toast('Акаунт вже створено на цьому пристрої. Увійдіть.');
-            isRegisterMode = false;
-            toggleAuthMode();
-            return;
-        }
-        const hp = await hashPW(p);
-        localStorage.setItem('ax_user', u);
-        localStorage.setItem('ax_password_hash', hp);
-        localStorage.setItem('ax_user_active', '1');
-        USER = u;
-        toast('Пароль встановлено!');
-        boot();
-    } else {
-        if (!localHash) {
-            toast('Немає акаунту. Будь ласка, зареєструйтесь спочатку.');
-            isRegisterMode = true;
-            toggleAuthMode();
-            return;
-        }
-        const hp = await hashPW(p);
-        if (u.toLowerCase() === localUser.toLowerCase() && hp === localHash) {
-            USER = localUser;
-            localStorage.setItem('ax_user_active', '1');
-            toast('Успішний вхід');
-            boot();
-        } else {
-            toast('Невірне ім\'я або пароль');
-        }
-    }
-}
-
-function doLogout(){
-    if(!confirm('Вийти?'))return;
-    USER=null;
-    localStorage.removeItem('ax_user_active');
-    document.getElementById('app').style.display='none';
-    document.getElementById('login').style.display='flex';
+function resetAllData(){
+    if(!confirm('Ви впевнені, що хочете видалити весь свій прогрес і 1RM? Цю дію неможливо скасувати.'))return;
+    localStorage.clear();
+    location.reload();
 }
 
 async function boot(){
-    document.getElementById('login').style.display='none';
-    document.getElementById('app').style.display='block';
-    document.getElementById('s-user').textContent=USER;
-    
     await sLoad();
     
     for(let k in KM){
@@ -952,12 +879,7 @@ function save1RM(){for(let k in KM)S.mx[k]=parseFloat(document.getElementById(KM
 
 /* ═══════ INIT ═══════ */
 window.onload=()=>{
-    const u=localStorage.getItem('ax_user');
-    const active=localStorage.getItem('ax_user_active');
-    if(u && active){
-        USER=u;
-        boot();
-    }
+    boot();
 };
 </script>
 </body>
