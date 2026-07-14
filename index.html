@@ -559,87 +559,74 @@ function hasCompletedToday(dayKey) {
 
 function syncUI(s){document.getElementById('sync-dot').className='sync-dot '+s;}
 
-// Helper headers
-function getHeaders() {
-    return {
-        'Content-Type': 'application/json',
-        'X-Token': TOKEN
-    };
+// Local hashing helper
+async function hashPW(pw) {
+    const msgBuffer = new TextEncoder().encode(pw);
+    const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+    return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
 }
 
 async function sLoad(){
-    try{
-        syncUI('saving');
-        const r=await fetch('/api/state/'+encodeURIComponent(USER), { headers: getHeaders() });
-        const j=await r.json();
-        if(j.ok){
-            if (j.data) {
-                S=j.data;
-                delete S._saved;
-            }
-            if (j.completed) {
-                COMPLETED = j.completed;
-            }
-        }
-        syncUI('ok');
-    }catch(e){syncUI('err');}
+    syncUI('saving');
+    const stateStr = localStorage.getItem('ax_state');
+    if (stateStr) {
+        try { S = JSON.parse(stateStr); } catch(e){}
+    }
+    const compStr = localStorage.getItem('ax_completed');
+    if (compStr) {
+        try { COMPLETED = JSON.parse(compStr); } catch(e){}
+    }
+    syncUI('ok');
 }
 
 async function sSave(){
-    try{
-        syncUI('saving');
-        await fetch('/api/state/'+encodeURIComponent(USER),{
-            method:'POST',
-            headers: getHeaders(),
-            body:JSON.stringify({ state: S, completed: COMPLETED })
-        });
-        syncUI('ok');
-    }catch(e){syncUI('err');}
+    syncUI('saving');
+    localStorage.setItem('ax_state', JSON.stringify(S));
+    localStorage.setItem('ax_completed', JSON.stringify(COMPLETED));
+    syncUI('ok');
 }
 
 function save(){
-    localStorage.setItem('ax_state', JSON.stringify(S));
-    localStorage.setItem('ax_completed', JSON.stringify(COMPLETED));
-    if(_st)clearTimeout(_st);
-    _st=setTimeout(sSave, 400);
+    sSave();
 }
 
 async function sLog(entry){
-    try{
-        syncUI('saving');
-        const today = getTodayString();
-        // Add to local completed today state
-        if (!COMPLETED[today]) COMPLETED[today] = [];
-        if (!COMPLETED[today].includes(entry.dayKey)) {
-            COMPLETED[today].push(entry.dayKey);
-        }
-        
-        await fetch('/api/complete/'+encodeURIComponent(USER), {
-            method:'POST',
-            headers: getHeaders(),
-            body:JSON.stringify({ ...entry, date: today, dayKey: entry.dayKey })
-        });
-        save();
-        syncUI('ok');
-    }catch(x){syncUI('err');}
+    syncUI('saving');
+    const today = getTodayString();
+    if (!COMPLETED[today]) COMPLETED[today] = [];
+    const fullKey = S.week + '_' + S.workout;
+    if (!COMPLETED[today].includes(fullKey)) {
+        COMPLETED[today].push(fullKey);
+    }
+    let history = [];
+    const histStr = localStorage.getItem('ax_history');
+    if (histStr) {
+        try { history = JSON.parse(histStr); } catch(e){}
+    }
+    history.push({ ...entry, dayKey: fullKey, _ts: new Date().toISOString() });
+    if (history.length > 500) history = history.slice(-500);
+    localStorage.setItem('ax_history', JSON.stringify(history));
+    save();
+    syncUI('ok');
 }
 
 async function loadHist(){
     const c=document.getElementById('hist-list');
-    try{
-        const r=await fetch('/api/history/'+encodeURIComponent(USER), { headers: getHeaders() });
-        const j=await r.json();
-        if(!j.ok||!j.data||!j.data.length){
-            c.innerHTML='<div class="row"><span class="row-label" style="color:var(--lbl4)">Ще немає завершених тренувань</span></div>';
-            return;
-        }
-        let h='';
-        j.data.slice().reverse().slice(0,20).forEach(x=>{
-            const d=new Date(x._ts);
-            h+=`<div class="hist-row"><span class="hist-day">${x.day||'?'} · Тижд. ${x.week||'?'}</span><span class="hist-date">${d.toLocaleDateString('uk-UA',{day:'numeric',month:'short'})}</span></div>`;
-        });
-        c.innerHTML=h;
-    }catch(e){c.innerHTML='<div class="row"><span class="row-label" style="color:var(--red)">Помилка завантаження</span></div>';}
+    let history = [];
+    const histStr = localStorage.getItem('ax_history');
+    if (histStr) {
+        try { history = JSON.parse(histStr); } catch(e){}
+    }
+    if(!history.length){
+        c.innerHTML='<div class="row"><span class="row-label" style="color:var(--lbl4)">Ще немає завершених тренувань</span></div>';
+        return;
+    }
+    let h='';
+    history.slice().reverse().slice(0,20).forEach(x=>{
+        const d=new Date(x._ts);
+        h+=`<div class="hist-row"><span class="hist-day">${x.day||'?'} · Тижд. ${x.week||'?'}</span><span class="hist-date">${d.toLocaleDateString('uk-UA',{day:'numeric',month:'short'})}</span></div>`;
+    });
+    c.innerHTML=h;
 }
 
 /* ═══════ AUTH ═══════ */
@@ -658,36 +645,47 @@ async function submitAuth() {
         toast('Заповни ім\'я та пароль');
         return;
     }
-    const url = isRegisterMode ? '/api/register' : '/api/login';
-    try {
-        const r = await fetch(url, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ username: u, password: p })
-        });
-        const j = await r.json();
-        if(j.ok) {
-            USER = j.username;
-            TOKEN = j.token;
-            localStorage.setItem('ax_user', USER);
-            localStorage.setItem('ax_token', TOKEN);
-            toast(isRegisterMode ? 'Акаунт створено' : 'Успішний вхід');
+    
+    const localHash = localStorage.getItem('ax_password_hash');
+    const localUser = localStorage.getItem('ax_user');
+    
+    if (isRegisterMode) {
+        if (localHash) {
+            toast('Акаунт вже створено на цьому пристрої. Увійдіть.');
+            isRegisterMode = false;
+            toggleAuthMode();
+            return;
+        }
+        const hp = await hashPW(p);
+        localStorage.setItem('ax_user', u);
+        localStorage.setItem('ax_password_hash', hp);
+        localStorage.setItem('ax_user_active', '1');
+        USER = u;
+        toast('Пароль встановлено!');
+        boot();
+    } else {
+        if (!localHash) {
+            toast('Немає акаунту. Будь ласка, зареєструйтесь спочатку.');
+            isRegisterMode = true;
+            toggleAuthMode();
+            return;
+        }
+        const hp = await hashPW(p);
+        if (u.toLowerCase() === localUser.toLowerCase() && hp === localHash) {
+            USER = localUser;
+            localStorage.setItem('ax_user_active', '1');
+            toast('Успішний вхід');
             boot();
         } else {
-            toast(j.error || 'Помилка авторизації');
+            toast('Невірне ім\'я або пароль');
         }
-    } catch(e) {
-        toast('Помилка мережі');
     }
 }
 
 function doLogout(){
     if(!confirm('Вийти?'))return;
-    USER=null; TOKEN=null;
-    localStorage.removeItem('ax_user');
-    localStorage.removeItem('ax_token');
-    localStorage.removeItem('ax_state');
-    localStorage.removeItem('ax_completed');
+    USER=null;
+    localStorage.removeItem('ax_user_active');
     document.getElementById('app').style.display='none';
     document.getElementById('login').style.display='flex';
 }
@@ -697,16 +695,6 @@ async function boot(){
     document.getElementById('app').style.display='block';
     document.getElementById('s-user').textContent=USER;
     
-    // Check if we have offline backup
-    const backupState = localStorage.getItem('ax_state');
-    if (backupState) {
-        try { S = JSON.parse(backupState); } catch(e){}
-    }
-    const backupCompleted = localStorage.getItem('ax_completed');
-    if (backupCompleted) {
-        try { COMPLETED = JSON.parse(backupCompleted); } catch(e){}
-    }
-
     await sLoad();
     
     for(let k in KM){
@@ -965,10 +953,9 @@ function save1RM(){for(let k in KM)S.mx[k]=parseFloat(document.getElementById(KM
 /* ═══════ INIT ═══════ */
 window.onload=()=>{
     const u=localStorage.getItem('ax_user');
-    const t=localStorage.getItem('ax_token');
-    if(u && t){
+    const active=localStorage.getItem('ax_user_active');
+    if(u && active){
         USER=u;
-        TOKEN=t;
         boot();
     }
 };
